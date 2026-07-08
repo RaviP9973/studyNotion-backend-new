@@ -1,6 +1,6 @@
 import Profile from "../models/Profile.js";
 import Courses from "../models/Course.js";
-import User from "../models/User.js"; 
+import User from "../models/User.js";
 import bcrypt from "bcrypt";
 import { uploadImageToCloudinary } from "../utils/imageUploader.js";
 import courseProgress from "../models/courseProgress.js";
@@ -19,12 +19,7 @@ export const updateProfile = async (req, res) => {
     } = req.body;
 
     const id = req.user.id;
-    // if (!contactNumber || !gender || !id) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "All fields are required",
-    //   });
-    // }
+
     const userDetail = await User.findById(id);
     const profile = await Profile.findById(userDetail.additionalDetails);
     // console.log("Additonal details",profile);
@@ -52,7 +47,7 @@ export const updateProfile = async (req, res) => {
       profileDetails,
     });
   } catch (error) {
-    console.log("error in update profile controller",error);
+    console.log("error in update profile controller", error);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -87,7 +82,7 @@ export const deleteAccount = async (req, res) => {
         message: "User not found",
       });
     }
-    const progressDetails = await courseProgress.find({userId: userDetails._id});
+    const progressDetails = await courseProgress.find({ userId: userDetails._id });
     // console.log("progressDetails",progressDetails);
 
     const passMatch = await bcrypt.compare(password, userDetails.password);
@@ -266,13 +261,13 @@ export const getEnrolledCourses = async (req, res) => {
       SubsectionLength = 0;
       for (var j = 0; j < userDetails.courses[i].courseContent.length; j++) {
         totalDurationInSeconds += userDetails.courses[i].courseContent[j].subSection.reduce((acc, curr) => acc + parseInt(curr.timeDuration), 0);
-        
+
         userDetails.courses[i].totalDuration = convertSecondsToDuration(totalDurationInSeconds);
         SubsectionLength += userDetails.courses[i].courseContent[j].subSection.length;
       }
-      
+
       let courseProgressCount = progressMap[userDetails.courses[i]._id.toString()] || 0;
-      
+
       if (SubsectionLength === 0) {
         userDetails.courses[i].progressPercentage = 100;
       } else {
@@ -285,7 +280,7 @@ export const getEnrolledCourses = async (req, res) => {
       }
     }
 
-    
+
     return res.status(200).json({
       success: true,
       data: userDetails.courses,
@@ -306,16 +301,16 @@ function convertSecondsToDuration(totalSeconds) {
   return `${hours}h ${minutes}m ${seconds}s`;
 }
 
-export const instructorDashboard = async(req,res) => {
+export const instructorDashboard = async (req, res) => {
   try {
-    const courseDetails = await Course.find({instructor: req.user.id})
+    const courseDetails = await Course.find({ instructor: req.user.id })
 
     const courseData = courseDetails.map((course) => {
       const totalStudentsEnrolled = course.studentEnrolled.length;
       const totalAmountGenerated = totalStudentsEnrolled * course.price;
 
       const courseDataWithStats = {
-        _id:course._id,
+        _id: course._id,
         courseName: course.name,
         courseDescription: course.courseDescription,
         totalStudentsEnrolled,
@@ -326,14 +321,14 @@ export const instructorDashboard = async(req,res) => {
 
     // // console.log("courseData" ,courseData)
     return res.status(200).json({
-      success:true,
-      data:courseData
+      success: true,
+      data: courseData
     })
   } catch (error) {
     console.log(error);
     res.status(500).json({
-      success:false,
-      message:"Internal server error"
+      success: false,
+      message: "Internal server error"
     })
   }
 }

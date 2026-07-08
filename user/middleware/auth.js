@@ -17,7 +17,7 @@ export const auth = async (req, res, next) => {
 
     const token = req.cookies?.token || req.body?.token || tokenFromHeader;
 
-    
+
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -42,8 +42,8 @@ export const auth = async (req, res, next) => {
     } catch (error) {
       // Don't expose detailed JWT error messages in production
       // console.log("error in auth.js",error);
-      const message = process.env.NODE_ENV === "development" 
-        ? error.message 
+      const message = process.env.NODE_ENV === "development"
+        ? error.message
         : "Invalid or expired token";
       return res.status(401).json({
         success: false,
