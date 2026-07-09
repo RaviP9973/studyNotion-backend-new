@@ -230,7 +230,7 @@ export const login = async (req, res) => {
       delete existingUser.password;
       delete existingUser.token;
       const options = {
-        expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         httpOnly: true,
         sameSite: "none",
         secure: true
