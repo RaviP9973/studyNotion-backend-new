@@ -10,14 +10,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // auth - Optimized middleware
 export const auth = async (req, res, next) => {
   try {
-    const authHeader = req.header("Authorization") || req.header("authorization");
-    const tokenFromHeader = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7).trim()
-      : null;
-
-    const token = req.cookies?.token || req.body?.token || tokenFromHeader;
-
-
+    const token = req.cookies?.token
+    
     if (!token) {
       return res.status(401).json({
         success: false,

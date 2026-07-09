@@ -20,10 +20,20 @@ export const createCourse = async (req, res) => {
       whatYouWillLearn,
       price,
       category,
-      tag,
-      instructions,
+      tag: _tag,
+      instructions: _instructions,
       status,
     } = req.body;
+
+    let tag = _tag;
+    if (typeof _tag === "string") {
+      try { tag = JSON.parse(_tag); } catch (e) { }
+    }
+    
+    let instructions = _instructions;
+    if (typeof _instructions === "string") {
+      try { instructions = JSON.parse(_instructions); } catch (e) { }
+    }
     console.log("instructions ", instructions);
 
     //get thumbnail
@@ -117,7 +127,7 @@ export const createCourse = async (req, res) => {
       { new: true }
     );
     console.log(categor);
-    let cursor = 0;
+    let cursor = '0';
 
     do {
       const result = await redisClient.scan(cursor, {
@@ -125,12 +135,12 @@ export const createCourse = async (req, res) => {
         COUNT: 100,
       });
 
-      cursor = result.cursor;
+      cursor = String(result.cursor);
 
       if (result.keys.length) {
         await redisClient.del(result.keys);
       }
-    } while (cursor !== 0);
+    } while (cursor !== '0');
 
     return res.status(200).json({
       success: true,
@@ -138,7 +148,7 @@ export const createCourse = async (req, res) => {
       data: newCourse,
     });
   } catch (error) {
-    console.log("Error while creating course");
+    console.log("Error while creating course",error);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -174,7 +184,7 @@ export const updateCourse = async (req, res) => {
     }
 
     for (const key in updates) {
-      if (updates.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(updates, key)) {
         if (key === "tag" || key === "instructions") {
           course[key] = JSON.parse(updates[key]);
         } else {
@@ -202,7 +212,7 @@ export const updateCourse = async (req, res) => {
       })
       .exec();
 
-    let cursor = 0;
+    let cursor = '0';
 
     do {
       const result = await redisClient.scan(cursor, {
@@ -210,12 +220,12 @@ export const updateCourse = async (req, res) => {
         COUNT: 100,
       });
 
-      cursor = result.cursor;
+      cursor = String(result.cursor);
 
       if (result.keys.length) {
         await redisClient.del(result.keys);
       }
-    } while (cursor !== 0);
+    } while (cursor !== '0');
     return res.status(200).json({
       success: true,
       message: "course updated successfully",
@@ -315,7 +325,7 @@ export const deleteCourse = async (req, res) => {
       })
       .exec();
 
-    let cursor = 0;
+    let cursor = '0';
 
     do {
       const result = await redisClient.scan(cursor, {
@@ -323,12 +333,12 @@ export const deleteCourse = async (req, res) => {
         COUNT: 100,
       });
 
-      cursor = result.cursor;
+      cursor = String(result.cursor);
 
       if (result.keys.length) {
         await redisClient.del(result.keys);
       }
-    } while (cursor !== 0);
+    } while (cursor !== '0');
     return res.status(200).json({
       success: true,
       data: allCourses,
