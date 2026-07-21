@@ -116,7 +116,10 @@ export const categoryPageDetails = async (req, res) => {
       });
     }
 
-    const selectedCourses = selectedCategory.course;
+    // Sort by newest first
+    const selectedCourses = selectedCategory.course.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
 
     // Get courses for other categories
     const categoriesExceptSelected = await Category.find({
@@ -131,6 +134,10 @@ export const categoryPageDetails = async (req, res) => {
     for (const category of categoriesExceptSelected) {
       differentCourses.push(...category.course);
     }
+    // Sort by newest first
+    differentCourses.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
 
     // Get top-selling courses across all categories
     const allCategories = await Category.find().populate({

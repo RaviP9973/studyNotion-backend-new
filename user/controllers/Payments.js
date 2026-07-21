@@ -15,13 +15,12 @@ export const capturePayment = async (req, res) => {
   const userId = req.user.id;
 
   // validation
-  if (courses.length 
-    === 0) {
+  if (!courses || !Array.isArray(courses) || courses.length === 0) {
     return res.json({
       success: false,
       message: "Please provide valid course ID",
     });
-  }
+  }                       
 
   let totalAmount = 0;
   for (const course_id of courses) {
@@ -38,9 +37,7 @@ export const capturePayment = async (req, res) => {
         });
       }
       // check if user already paid for the same course
-      const uid = new mongoose.Types.ObjectId(userId);
-
-      if (course.studentEnrolled.includes(uid)) {
+      if (course.studentEnrolled.some(id => id.toString() === userId.toString())) {
         return res.status(200).json({
           success: false,
           message: "Student is already enrolled",
@@ -63,7 +60,7 @@ export const capturePayment = async (req, res) => {
   const options = {
     amount: totalAmount * 100,
     currency,
-    receipt: Math.random(Date.now()).toString(),
+    receipt: `receipt_${Date.now()}_${Math.random().toString(36).slice(2)}`,
     notes: {
       courseId: courses,
       userId,
@@ -124,80 +121,89 @@ export const verifySignature = async (req, res) => {
     .digest("hex");
 
   if (expectedSignature === razorpay_signature) {
-    await enrolledStudents(courses, userId, res);
-
-    return res.status(200).json({
-      success: true,
-      message: "Payment verified",
-    });
+    try {
+      await enrolledStudents(courses, userId);
+      return res.status(200).json({
+        success: true,
+        message: "Payment verified",
+      });
+    } catch (error) {
+      console.error("Error enrolling students:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to enroll students",
+      });
+    }
   }
 
-  return res.status(200).json({
+  return res.status(400).json({
     success: false,
     message: "Payment failed",
   });
 };
 
-const enrolledStudents = async (courses, userId, res) => {
+const enrolledStudents = async (courses, userId) => {
+  if (!courses || !userId) {
+    throw new Error("Please provide data for courses or userId");
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  // Collect email messages to send AFTER transaction commits
+  const emailMessages = [];
+
   try {
-    if (!courses || !userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide data for courses or userId",
+    for (const courseId of courses) {
+      const enrolledCourse = await Course.findByIdAndUpdate(
+        courseId,
+        { $push: { studentEnrolled: userId } },
+        { new: true, session }
+      );
+      if (!enrolledCourse) {
+        throw new Error(`Course not found: ${courseId}`);
+      }
+
+      const [courseProgres] = await courseProgress.create(
+        [{ courseId, userId, completedVideos: [] }],
+        { session }
+      );
+
+      const enrolledStudent = await User.findByIdAndUpdate(
+        userId,
+        {
+          $push: {
+            courses: courseId,
+            courseProgress: courseProgres._id,
+          },
+        },
+        { new: true, session }
+      );
+
+      emailMessages.push({
+        email: enrolledStudent.email,
+        title: `Successfully Enrolled into ${enrolledCourse.name}`,
+        body: courseEnrollmentEmail(
+          enrolledCourse.name,
+          `${enrolledStudent.firstName} ${enrolledStudent.lastName}`
+        ),
       });
     }
 
-    for (const courseId of courses) {
-      try {
-        const enrolledCourse = await Course.findByIdAndUpdate(
-          { _id: courseId },
-          { $push: { studentEnrolled: userId } },
-          { new: true }
-        );
-        if (!enrolledCourse) {
-          return res.status(500).json({
-            success: false,
-            message: "Course not found",
-          });
-        }
+    await session.commitTransaction();
 
-        const courseProgres = await courseProgress.create({
-          courseId:courseId,
-          userId:userId,
-          completedVideos : [],
-        })
-        const enrolledStudent = await User.findByIdAndUpdate(
-          { _id: userId },
-          { $push: {
-             courses: courseId ,
-             courseProgress: courseProgres._id,
-            
-            } },
-          { new: true }
-        );
-
-        // console.log(enrolledCourse);
-        const emailMessage = {
-          email: enrolledStudent.email,
-          title: `Successfully Enrolled into ${enrolledCourse.name}`,
-          body: courseEnrollmentEmail(enrolledCourse.name, `${enrolledStudent.firstName} ${enrolledStudent.lastName}`)
-        }
-
-        await publishToQueue("email-queue",emailMessage);
-      } catch (error) {
-        return res.status(500).json({
-          success: false,
-          message: error.message,
-        });
-      }
+    // Send emails only after successful commit
+    for (const message of emailMessages) {
+      await publishToQueue("email-queue", message);
     }
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
 };
+
 
 export const sendPaymentSuccessEmail = async(req,res) => {
   const {orderId,paymentId,amount} = req.body;
@@ -215,10 +221,14 @@ export const sendPaymentSuccessEmail = async(req,res) => {
     const enrolledStudent = await User.findById(userId);
     const emailMessage = {
       email: enrolledStudent.email,
-      title: `Payment Recived`,
+      title: `Payment Received`,
       body: paymentSuccessEmail(`${enrolledStudent.firstName} ${enrolledStudent.lastName}`, amount/100,orderId,paymentId)
     }
     await publishToQueue("email-queue",emailMessage);
+    return res.status(200).json({
+      success: true,
+      message: "Payment success email sent",
+    });
   } catch (error) {
     console.log("Error in sending mail",error);
     return res.status(500).json({
