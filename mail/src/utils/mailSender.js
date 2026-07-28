@@ -17,7 +17,9 @@ const mailSender = async (email, title, body) => {
             auth: {
                 pass: process.env.MAIL_PASS,
                 user: process.env.MAIL_USER,
-            }
+            },
+            secure: false,
+            family: 4
         })
 
         await transporter.sendMail({
