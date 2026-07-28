@@ -23,7 +23,7 @@ export const sendOtpConsumer = async () => {
             const { email, title, body } = JSON.parse(msg.content.toString());
 
             await mailSender(email, title, body);
-
+            // 
             console.log("mail sent successfully")
             channel.ack(msg);
         })

@@ -52,7 +52,11 @@ const userSchema = new mongoose.Schema({
             type:mongoose.Schema.Types.ObjectId,
             ref:"courseProgress"
         }
-    ]
+    ],
+    isBlocked:{
+        type:Boolean,
+        default:false,
+    }
 })
 
 userSchema.index({ email: 1 }, { unique: true });

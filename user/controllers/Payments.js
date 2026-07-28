@@ -7,6 +7,7 @@ import { paymentSuccessEmail } from "../mail/paymentSuccessEmail.js";
 import crypto from "crypto";
 import courseProgress from "../models/courseProgress.js";
 import { publishToQueue } from "../config/rabbitmq.js";
+import redisClient from "../config/redis.js";
 
 export const capturePayment = async (req, res) => {
   // get courseId and UserId
@@ -21,6 +22,20 @@ export const capturePayment = async (req, res) => {
       message: "Please provide valid course ID",
     });
   }                       
+
+  // Prevent double-clicking race condition using Redis Lock specific to these courses
+  const sortedCourses = [...courses].sort().join(',');
+  const lockKey = `payment_lock:${userId}:${sortedCourses}`;
+  const isLocked = await redisClient.set(lockKey, "locked", { condition: 'NX', expiration: {
+    type: "EX",
+    value: 5
+  } });
+  if (!isLocked) {
+    return res.status(429).json({
+      success: false,
+      message: "Payment is currently processing. Please wait...",
+    });
+  }
 
   let totalAmount = 0;
   for (const course_id of courses) {
@@ -155,13 +170,14 @@ const enrolledStudents = async (courses, userId) => {
 
   try {
     for (const courseId of courses) {
-      const enrolledCourse = await Course.findByIdAndUpdate(
-        courseId,
+      // Atomic condition: Only update if userId is NOT already in studentEnrolled
+      const enrolledCourse = await Course.findOneAndUpdate(
+        { _id: courseId, studentEnrolled: { $ne: userId } },
         { $push: { studentEnrolled: userId } },
         { new: true, session }
       );
       if (!enrolledCourse) {
-        throw new Error(`Course not found: ${courseId}`);
+        throw new Error(`Course not found or student already enrolled: ${courseId}`);
       }
 
       const [courseProgres] = await courseProgress.create(
@@ -169,8 +185,9 @@ const enrolledStudents = async (courses, userId) => {
         { session }
       );
 
-      const enrolledStudent = await User.findByIdAndUpdate(
-        userId,
+      // Atomic condition: Only update if courseId is NOT already in courses
+      const enrolledStudent = await User.findOneAndUpdate(
+        { _id: userId, courses: { $ne: courseId } },
         {
           $push: {
             courses: courseId,
@@ -180,6 +197,9 @@ const enrolledStudents = async (courses, userId) => {
         { new: true, session }
       );
 
+      if (!enrolledStudent) {
+        throw new Error(`User not found or already enrolled in course: ${courseId}`);
+      }
       emailMessages.push({
         email: enrolledStudent.email,
         title: `Successfully Enrolled into ${enrolledCourse.name}`,

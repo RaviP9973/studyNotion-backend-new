@@ -17,7 +17,22 @@ export const createCategory = async (req, res) => {
       name: name,
       description: description,
     });
-    console.log(categoryDetails);
+    // console.log(categoryDetails);
+    // invalidate the cache 
+    let cursor = '0';
+
+    do {
+      const result = await redisClient.scan(cursor, {
+        MATCH: "category:*",
+        COUNT: 100,
+      });
+
+      cursor = String(result.cursor);
+
+      if (result.keys.length) {
+        await redisClient.del(result.keys);
+      }
+    } while (cursor !== '0');
     return res.status(200).json({
       success: true,
       message: "Category created successfully",

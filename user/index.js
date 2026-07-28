@@ -7,6 +7,7 @@ import profileRoutes from "./routes/Profile.js";
 import paymentRoutes from "./routes/Payments.js";
 import courseRoutes from "./routes/Course.js";
 import contactUsRoutes from "./routes/ContactUs.js";
+import adminRoutes from "./routes/adminRoutes.js"; 
 
 redisClient
   .connect()
@@ -33,7 +34,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(
   cors({
-    origin: frontendUrl,
+    origin: [frontendUrl, "http://localhost:5174"], // Support both main app and admin app
     credentials: true,
   }),
 );
@@ -54,6 +55,7 @@ app.use("/api/v1/profile", profileRoutes);
 app.use("/api/v1/course", courseRoutes);
 app.use("/api/v1/payment", paymentRoutes);
 app.use("/api/v1/contact", contactUsRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   return res.json({
