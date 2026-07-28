@@ -12,15 +12,22 @@ const mailSender = async (email, title, body) => {
             };
         }
 
+        // Manually resolve IPv4 address to avoid Render IPv6 ENETUNREACH issues
+        const dns = await import('dns');
+        const ipv4Addresses = await dns.promises.resolve4(process.env.MAIL_HOST);
+        const hostIp = ipv4Addresses[0];
+
         let transporter = nodemailer.createTransport({
-            host: process.env.MAIL_HOST,
+            host: hostIp,
             port: 587,
             auth: {
                 pass: process.env.MAIL_PASS,
                 user: process.env.MAIL_USER,
             },
             secure: false,
-            family: 4
+            tls: {
+                servername: process.env.MAIL_HOST // Required so TLS doesn't fail on IP address
+            }
         })
 
         await transporter.sendMail({
