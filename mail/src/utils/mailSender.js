@@ -1,5 +1,3 @@
-import nodemailer from "nodemailer";
-
 const mailSender = async (email, title, body) => {
     try {
         // Validate email format
@@ -12,39 +10,41 @@ const mailSender = async (email, title, body) => {
             };
         }
 
-        // Manually resolve IPv4 address to avoid Render IPv6 ENETUNREACH issues
-        const dns = await import('dns');
-        const ipv4Addresses = await dns.promises.resolve4(process.env.MAIL_HOST);
-        const hostIp = ipv4Addresses[0];
-
-        let transporter = nodemailer.createTransport({
-            host: hostIp,
-            port: 587,
-            auth: {
-                pass: process.env.MAIL_PASS,
-                user: process.env.MAIL_USER,
+        const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+            method: "POST",
+            headers: {
+                "api-key": process.env.BREVO_API_KEY,
+                "Content-Type": "application/json",
+                "accept": "application/json"
             },
-            secure: false,
-            tls: {
-                servername: process.env.MAIL_HOST // Required so TLS doesn't fail on IP address
-            }
-        })
+            body: JSON.stringify({
+                sender: {
+                    name: "StudyNotion",
+                    email: process.env.MAIL_USER
+                },
+                to: [{ email: email }],
+                subject: title,
+                htmlContent: body
+            })
+        });
 
-        await transporter.sendMail({
-            from: 'StudyNotion || Codehelp - by Babbar',
-            to: `${email}`,
-            subject: `${title}`,
-            html: `${body}`,
-        })
+        const data = await response.json();
 
-        // console.log(info);
-        // return {
-        //     success: true,
-        //     message: "Email sent successfully",
-        //     info: info
-        // };
+        if (!response.ok) {
+            console.log("Brevo API error:", data);
+            return {
+                success: false,
+                message: data.message || "Failed to send email"
+            };
+        }
+
+        // console.log("Email sent via Brevo, messageId:", data.messageId);
+        return {
+            success: true,
+            message: "Email sent successfully"
+        };
     } catch (error) {
-        console.log(error.message);
+        console.log("Mail sender error:", error.message);
         return {
             success: false,
             message: error.message
