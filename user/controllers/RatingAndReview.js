@@ -46,7 +46,7 @@ export const createRating = async (req, res) => {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
       }
     );
     // return response

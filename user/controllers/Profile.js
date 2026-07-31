@@ -35,7 +35,7 @@ export const updateProfile = async (req, res) => {
         gender: gender,
       },
       {
-        new: true,
+        returnDocument: "after",
       }
     );
     // console.log("after profile details");

@@ -111,7 +111,7 @@ export const createCourse = async (req, res) => {
           courses: newCourse._id,
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     //update the category schema
@@ -124,7 +124,7 @@ export const createCourse = async (req, res) => {
           course: newCourse._id,
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     );
     console.log(categor);
     let cursor = '0';
@@ -271,7 +271,7 @@ export const deleteCourse = async (req, res) => {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
       }
     );
     // console.log("userDetails", userDetails);

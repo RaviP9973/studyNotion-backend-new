@@ -28,7 +28,7 @@ export const createSection = async (req, res) => {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
       }
     ).populate({
       path: "courseContent",
@@ -68,7 +68,7 @@ export const updateSection = async (req, res) => {
       {
         sectionName,
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     const courseDetails = await Course.findById(courseId).populate({
@@ -105,7 +105,7 @@ export const deleteSection = async (req, res) => {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
       }
     )
       .populate({

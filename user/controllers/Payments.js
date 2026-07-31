@@ -174,7 +174,7 @@ const enrolledStudents = async (courses, userId) => {
       const enrolledCourse = await Course.findOneAndUpdate(
         { _id: courseId, studentEnrolled: { $ne: userId } },
         { $push: { studentEnrolled: userId } },
-        { new: true, session }
+        { returnDocument: "after", session }
       );
       if (!enrolledCourse) {
         throw new Error(`Course not found or student already enrolled: ${courseId}`);
@@ -194,7 +194,7 @@ const enrolledStudents = async (courses, userId) => {
             courseProgress: courseProgres._id,
           },
         },
-        { new: true, session }
+        { returnDocument: "after", session }
       );
 
       if (!enrolledStudent) {

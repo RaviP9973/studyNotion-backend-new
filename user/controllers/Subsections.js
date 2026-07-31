@@ -53,7 +53,7 @@ export const createSubsection = async (req, res) => {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
       }
     ).populate("subSection");
 
@@ -113,7 +113,7 @@ export const updateSubSection = async (req, res) => {
         videoUrl: videoUrl,
       },
       {
-        new: true,
+        returnDocument: "after",
       }
     );
     const section = await Section.findById(sectionId).populate("subSection");

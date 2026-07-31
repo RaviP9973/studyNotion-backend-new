@@ -92,7 +92,7 @@ export const blockUser = async (req, res) => {
       return res.status(400).json({ success: false, message: "User ID is required" });
     }
 
-    const user = await User.findByIdAndUpdate(userId, { isBlocked: true }, { new: true });
+    const user = await User.findByIdAndUpdate(userId, { isBlocked: true }, { returnDocument: "after" });
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -121,7 +121,7 @@ export const unblockUser = async (req, res) => {
       return res.status(400).json({ success: false, message: "User ID is required" });
     }
 
-    const user = await User.findByIdAndUpdate(userId, { isBlocked: false }, { new: true });
+    const user = await User.findByIdAndUpdate(userId, { isBlocked: false }, { returnDocument: "after" });
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -154,7 +154,7 @@ export const updateCategory = async (req, res) => {
     const category = await Category.findByIdAndUpdate(
       id,
       { name, description },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!category) {
