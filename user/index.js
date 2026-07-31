@@ -34,7 +34,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(
   cors({
-    origin: [frontendUrl, "http://localhost:5174"], // Support both main app and admin app
+    origin: [frontendUrl, ], // Support both main app and admin app
     credentials: true,
   }),
 );
