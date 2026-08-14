@@ -8,7 +8,7 @@ import paymentRoutes from "./routes/Payments.js";
 import courseRoutes from "./routes/Course.js";
 import contactUsRoutes from "./routes/ContactUs.js";
 import adminRoutes from "./routes/adminRoutes.js"; 
-
+import cartRoutes from "./routes/cart.js";
 redisClient
   .connect()
   .then(() => {
@@ -56,6 +56,7 @@ app.use("/api/v1/course", courseRoutes);
 app.use("/api/v1/payment", paymentRoutes);
 app.use("/api/v1/contact", contactUsRoutes);
 app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/cart", cartRoutes);
 
 app.get("/", (req, res) => {
   return res.json({
