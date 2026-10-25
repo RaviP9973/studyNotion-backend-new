@@ -4,10 +4,19 @@ import { sendOtpConsumer } from "./utils/consumer.js"
 
 dotenv.config();
 
-sendOtpConsumer();
 const app = express();
+const port = process.env.PORT || 4001;
 
+app.get("/health", (req, res) => {
+    return res.status(200).json({
+        success: true,
+        service: "mail",
+        status: "ok",
+    });
+});
 
-app.listen(process.env.PORT, () => {
-    console.log("mail service is running on port ",process.env.PORT);
+sendOtpConsumer();
+
+app.listen(port, () => {
+    console.log("mail service is running on port ", port);
 })

@@ -30,6 +30,14 @@ dotenv.config();
 const port = process.env.PORT || 4000;
 
 app.set("trust proxy", 1);
+app.get("/health", (req, res) => {
+  return res.status(200).json({
+    success: true,
+    service: "user",
+    status: "ok",
+  });
+});
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(
